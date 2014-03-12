@@ -54,24 +54,7 @@ class API {
 			$state = 405;
 			$response = array("error" => "Invalid method called");
 		} else {
-			switch ($this->method) {
-				case 'DELETE':
-					$response = $this->handler->{$this->call}(&$state, $this);
-					break;
-				case 'POST':
-					$response = $this->handler->{$this->call}(&$state, $this);
-					break;
-				case 'GET':
-					$response = $this->handler->{$this->call}(&$state, $this);
-					break;
-				case 'PUT':
-					$response = $this->handler->{$this->call}(&$state, $this);
-					break;
-				default:
-					$response = $this->handler->{$this->call}(&$state, $this);
-					$state = 405;
-					break;
-			}
+			$response = $this->handler->{$this->call}(&$state, $this);
 		}
 		$this->endTime = microtime(true);
 		echo $this->toJSON($response, $state);
