@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Data>
+	<Statement name="Categories" order="1">
+		INSERT INTO Category (type) VALUES
+		('Unknown'),
+		('Bio'),
+		('Paper'),
+		('Metal'),
+		('Glass'),
+		('Mixed');
+	</Statement>
+	<Statement name="Clients" order="2">
+		INSERT INTO Clients (serial_number, email, location) VALUES
+		('DEFAULT', 'hsopanen@gmail.com', 'n/a');
+	</Statement>
+	<Statement name="ClientSetup" order="2">
+		INSERT INTO ClientSetup (client, bin_open_time) VALUES
+		(1, 10000);
+	</Statement>
+</Data>

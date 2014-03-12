@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Database>
+	<Table name="Category" order="1">
+		CREATE TABLE Category (
+			id INT NOT NULL AUTO_INCREMENT,
+			type VARCHAR(256) NOT NULL,
+			PRIMARY KEY(id)
+		) ENGINE InnoDB;
+	</Table>
+	<Table name="Clients" order="2">
+		CREATE TABLE Clients (
+			id INT NOT NULL AUTO_INCREMENT,
+			serial_number VARCHAR(100) NOT NULL,
+			email VARCHAR(256) NOT NULL,
+			location VARCHAR(256) NOT NULL,
+			PRIMARY KEY(id)
+		) ENGINE InnoDB;
+	</Table>
+	<Table name="ClientSetup" order="3">
+		CREATE TABLE ClientSetup (
+			id INT NOT NULL AUTO_INCREMENT,
+			client INT NOT NULL,
+			bin_open_time INT NOT NULL,
+			PRIMARY KEY(id),
+			FOREIGN KEY(client) REFERENCES Clients(id) ON DELETE CASCADE
+		) ENGINE InnoDB;
+	</Table>
+	<Table name="Product" order="4">
+		CREATE TABLE Product (
+			id INT NOT NULL AUTO_INCREMENT,
+			bar_code VARCHAR(100) NOT NULL,
+			name VARCHAR(256) DEFAULT NULL,
+			category INT NOT NULL,
+			potential INT NOT NULL DEFAULT 1,
+			learned INT NOT NULL DEFAULT 0,
+			PRIMARY KEY(id),
+			FOREIGN KEY(category) REFERENCES Category(id) ON DELETE CASCADE
+		) ENGINE InnoDB;
+	</Table>
+	<Table name="Waste" order="5">
+		CREATE TABLE Waste (
+			id INT NOT NULL AUTO_INCREMENT,
+			client INT NOT NULL,
+			product INT NOT NULL,
+			category INT NOT NULL,
+			time_disposed TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY(id),
+			FOREIGN KEY(category) REFERENCES Category(id) ON DELETE CASCADE,
+			FOREIGN KEY(product) REFERENCES Product(id) ON DELETE CASCADE,
+			FOREIGN KEY(client) REFERENCES Clients(id) ON DELETE CASCADE
+		) ENGINE InnoDB;
+	</Table>
+</Database>
