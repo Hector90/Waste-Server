@@ -53,8 +53,8 @@ class API {
 	
 	private function prepare() {
 		$this->method = $_SERVER['REQUEST_METHOD'];
-		$this->uri = $_SERVER['REQUEST_URI'];
-		$uri_parts = explode('?', $_SERVER['REQUEST_URI'], 2);
+		$this->uri = urldecode($_SERVER['REQUEST_URI']);
+		$uri_parts = explode('?', $this->uri, 2);
 		$this->path = str_replace($this->root, "", $uri_parts[0]);
 		$this->path_parts = explode('/', $this->path);
 		$this->call = $this->path_parts[1];
