@@ -30,13 +30,13 @@ class WasteHandler {
 		if (!Commons::getParam('serial', $api, 2)) {
 			$response = array("error" => "Serial missing.");
 			return false;
-		}
+		} 
 		$data = $this->db->query("SELECT * FROM Clients WHERE serial_number = '%s';", array(Commons::getParam('serial', $api, 2)));
 		if (count($data) == 0) {
 			$this->db->exec("INSERT INTO Clients (serial_number, email, location) VALUES ('%s', 'n/a', 'n/a');", array(Commons::getParam('serial', $api, 2)));
 			$data = $this->db->query("SELECT * FROM Clients WHERE serial_number = '%s';", array(Commons::getParam('serial', $api, 2)));
 		}
-		$this->client = $row[0]['id'];
+		$this->client = $data[0]['id'];
 		return true;
 	}
 	
