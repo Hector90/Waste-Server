@@ -33,5 +33,10 @@ class Database {
 	public function exec($clause, $params) {
 		return (mysql_query($this->prepareClause($clause, $params), $this->con) ? true : false);
 	}
+	
+	public function lastId() {
+		$id = mysql_insert_id();
+		return ($id ? $id : false);
+	}
 
 }

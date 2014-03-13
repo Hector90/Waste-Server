@@ -11,11 +11,12 @@
 		('Mixed');
 	</Statement>
 	<Statement name="Clients" order="2">
-		INSERT INTO Clients (serial_number, email, location) VALUES
-		('DEFAULT', 'hsopanen@gmail.com', 'n/a');
+		INSERT INTO Clients (serial_number, email, pin, location) VALUES
+		('ADMIN', 'admin@waste', SHA1('1234'), 'n/a'),
+		('DEFAULT', 'default@waste', SHA1('1234'), 'n/a');
 	</Statement>
-	<Statement name="ClientSetup" order="2">
-		INSERT INTO ClientSetup (client, bin_open_time) VALUES
-		(1, 10000);
+	<Statement name="ClientRel" order="3">
+		INSERT INTO ClientRel (parent, child, type) VALUES
+		((SELECT id FROM Clients where email = 'admin@waste'), (SELECT id FROM Clients where email = 'default@waste'), 'ALL');
 	</Statement>
 </Data>

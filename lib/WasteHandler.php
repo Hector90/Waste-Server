@@ -27,13 +27,23 @@ class WasteHandler {
 	# }
 	
 	public function authenticate($response, $api) {
-		if (!Commons::getParam('serial', $api, 2)) {
-			$response = array("error" => "Serial missing.");
+		if (!Commons::getParam('serial', $api, 2) && !Commons::getParam('email') && !Commons::getParam('pin')) {
+			$response = array("error" => "Authentication data missing.");
 			return false;
 		} 
-		$data = $this->db->query("SELECT * FROM Clients WHERE serial_number = '%s';", array(Commons::getParam('serial', $api, 2)));
+		$data = array();
+		if (Commons::getParam('serial', $api, 2) && !Commons::getParam('email') && !Commons::getParam('pin')) {
+			$data = $this->db->query("SELECT * FROM Clients WHERE serial_number = '%s';", array(Commons::getParam('serial', $api, 2)));
+			$this->session = "READ_ONLY";
+		}
+		if (Commons::getParam('email') && Commons::getParam('pin')) {
+			$data = $this->db->query("SELECT * FROM Clients WHERE email = '%s' AND pin = SHA1('%s');", array(Commons::getParam('email'), Commons::getParam('pin')));
+			if (count($data) == 0) return false;
+			$this->session = "PROACTIVE";
+		}
 		if (count($data) == 0) {
 			$this->db->exec("INSERT INTO Clients (serial_number, email, location) VALUES ('%s', 'n/a', 'n/a');", array(Commons::getParam('serial', $api, 2)));
+			$this->db->exec("INSERT INTO ClientRel (parent, child, type) VALUES ((SELECT id FROM Clients WHERE email = 'admin@waste'), '%s', 'ALL');", array($this->db->lastId()));
 			$data = $this->db->query("SELECT * FROM Clients WHERE serial_number = '%s';", array(Commons::getParam('serial', $api, 2)));
 		}
 		$this->client = $data[0]['id'];
