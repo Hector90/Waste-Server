@@ -31,18 +31,13 @@ class WasteHandler {
 			$response = array("error" => "Serial missing.");
 			return false;
 		}
-		$auth = false;
 		$data = $this->db->query("SELECT * FROM Clients WHERE serial_number = '%s';", array(Commons::getParam('serial', $api, 2)));
 		if (count($data) == 0) {
-			# TODO: Write new client.
 			$this->db->exec("INSERT INTO Clients (serial_number, email, location) VALUES ('%s', 'n/a', 'n/a');", array(Commons::getParam('serial', $api, 2)));
 			$data = $this->db->query("SELECT * FROM Clients WHERE serial_number = '%s';", array(Commons::getParam('serial', $api, 2)));
 		}
-		foreach ($data as &$row) {
-			$this->client = $row['id'];
-			$auth = true;
-		}
-		return $auth;
+		$this->client = $row[0]['id'];
+		return true;
 	}
 	
 	#
@@ -78,7 +73,7 @@ class WasteHandler {
 								$chkRow = $this->db->query("SELECT product, Category.id as cat, Category.type, COUNT(*) as C FROM Waste LEFT JOIN Category ON Category.id = Waste.category WHERE product = '%s' GROUP BY Category.id ORDER BY COUNT(*) desc LIMIT 1", array($row['id']));
 								if ($chkRow[0]['C'] >= $this->learn) {
 									$this->db->exec("UPDATE Product set learned = 1, potential = 0, category = '%s' WHERE id = '%s'", array($chkRow[0]['cat'], $chkRow[0]['product']));
-									$arr = array('category' => $chkRow['type']);
+									$arr = array('category' => $chkRow[0]['type']);
 								} else {
 									$arr = array('category' => 'Unknown');
 								}
@@ -95,7 +90,6 @@ class WasteHandler {
 	}
 
 	public function synch($state, $api) {
-		
 		
 	}
 	
