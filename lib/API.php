@@ -3,10 +3,10 @@ require_once('Commons.php');
 
 class API {
 
-	const DB_HOST = "localhost";
-	const DB_USER = "waste";
-	const DB_PASS = "RoskaKuskit";
-	const DB_NAME = "waste";
+	public static $DB_HOST = "host";
+	public static $DB_USER = "user";
+	public static $DB_PASS = "password";
+	public static $DB_NAME = "database";
 	private $db = NULL;
 	
 	function __construct($root, $handler) {
@@ -22,8 +22,8 @@ class API {
 	private function init() {
 		$this->startTime = microtime(true);
 		# Connecting to database;
-		$this->db = mysql_connect(self::DB_HOST, self::DB_USER, self::DB_PASS);
-		if ($this->db) mysql_select_db(self::DB_NAME, $this->db);
+		$this->db = mysql_connect(self::$DB_HOST, self::$DB_USER, self::$DB_PASS);
+		if ($this->db) mysql_select_db(self::$DB_NAME, $this->db);
 	}
 	
 	private function toJSON($data, $state) {
