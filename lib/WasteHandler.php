@@ -5,6 +5,7 @@
 #
 
 require_once('Commons.php');
+require_once('Database.php');
 
 class WasteHandler {
 
@@ -12,8 +13,9 @@ class WasteHandler {
 	# Constructor.
 	#
 	
-	function __construct($learn) {
+	function __construct($learn, $database) {
 		$this->learn = $learn ? $learn : 0;
+		$this->db = $database;
 	}	
 		
 	#
@@ -30,19 +32,16 @@ class WasteHandler {
 			return false;
 		}
 		$auth = false;
-		$query = vsprintf("SELECT * FROM Clients WHERE serial_number = '%s';", array(mysql_real_escape_string(Commons::getParam('serial', $api, 2))));
-		$result = mysql_query($query);
-		if (mysql_num_rows($result) == 0) {
+		$data = $this->db->query("SELECT * FROM Clients WHERE serial_number = '%s';", array(Commons::getParam('serial', $api, 2)));
+		if (count($data) == 0) {
 			# TODO: Write new client.
-			mysql_query(vsprintf("INSERT INTO Clients (serial_number, email, location) VALUES ('%s', 'n/a', 'n/a');", array(mysql_real_escape_string(Commons::getParam('serial', $api, 2)))));
-			$result = mysql_query($query);
+			$this->db->exec("INSERT INTO Clients (serial_number, email, location) VALUES ('%s', 'n/a', 'n/a');", array(Commons::getParam('serial', $api, 2)));
+			$data = $this->db->query("SELECT * FROM Clients WHERE serial_number = '%s';", array(Commons::getParam('serial', $api, 2)));
 		}
-		while ($row = mysql_fetch_assoc($result)) {
+		foreach ($data as &$row) {
 			$this->client = $row['id'];
-			$this->privilege = $row['privilege'];
 			$auth = true;
 		}
-		mysql_free_result($result);
 		return $auth;
 	}
 	
@@ -56,15 +55,13 @@ class WasteHandler {
 			return array("error", "invocation of get method requires HTTP GET");
 		} else {
 			$arr = NULL;
-			$result = mysql_query(vsprintf("SELECT Product.id, Product.name, Product.potential, Category.type, Category.id as cat FROM Product LEFT JOIN Category ON Category.id = Product.category WHERE bar_code = '%s';",
-				array(mysql_real_escape_string(Commons::getParam('bar_code', $api, 3)))));
-			if (mysql_num_rows($result) == 0) {
+			$result = $this->db->query("SELECT Product.id, Product.name, Product.potential, Category.type, Category.id as cat FROM Product LEFT JOIN Category ON Category.id = Product.category WHERE bar_code = '%s'", array(Commons::getParam('bar_code', $api, 3)));
+			if (count($result) == 0) {
 				# Insert new product
 				$arr = array('category' => 'Unknown');
-				mysql_query(vsprintf("INSERT INTO Product (bar_code, category, potential) VALUES ('%s', (SELECT id FROM Category WHERE type = 'Unknown'), 1)",
-					array(mysql_real_escape_string(Commons::getParam('bar_code', $api, 3)))));
+				$this->db->exec("INSERT INTO Product (bar_code, category, potential) VALUES ('%s', (SELECT id FROM Category WHERE type = 'Unknown'), 1)", array(Commons::getParam('bar_code', $api, 3)));
 			} else {
-				while ($row = mysql_fetch_assoc($result)) {
+				foreach ($result as &$row) {
 					# Check if potential
 					if ($row['potential'] == "1") {
 						if (Commons::getParam('category', $api, 4) == NULL) {
@@ -72,34 +69,27 @@ class WasteHandler {
 							$arr = array('error' => 'category required');
 						} else {
 							# Check if category exists.
-							$chkCat = mysql_query(vsprintf("SELECT id FROM Category WHERE type = '%s'", array(mysql_real_escape_string(Commons::getParam('category', $api, 4)))));
-							if (mysql_num_rows($chkCat) == 0) {
+							$chkCat = $this->db->query("SELECT id FROM Category WHERE type = '%s'", array(Commons::getParam('category', $api, 4)));
+							if (count($chkCat) == 0) {
 								$arr = array("error" => "Invalid category specified.");
 								$state = 405;
 							} else {						
-								mysql_query(vsprintf("INSERT INTO Waste (client, product, category) VALUES ('%s', '%s', (SELECT id FROM Category WHERE type = '%s'));",
-									array(mysql_real_escape_string($this->client), $row['id'], mysql_real_escape_string(Commons::getParam('category', $api, 4)))));
-								$chk = mysql_query(vsprintf("SELECT product, Category.id as cat, Category.type, COUNT(*) as C FROM Waste LEFT JOIN Category ON Category.id = Waste.category WHERE product = '%s' GROUP BY Category.id ORDER BY COUNT(*) desc LIMIT 1", array($row['id'])));
-								$chkRow = mysql_fetch_assoc($chk);
-								if ($chkRow['C'] >= $this->learn) {
-									mysql_query(vsprintf("UPDATE Product set learned = 1, potential = 0, category = '%s' WHERE id = '%s'", array($chkRow['cat'], $chkRow['product'])));
+								$this->db->exec("INSERT INTO Waste (client, product, category) VALUES ('%s', '%s', (SELECT id FROM Category WHERE type = '%s'));", array($this->client, $row['id'], Commons::getParam('category', $api, 4)));
+								$chkRow = $this->db->query("SELECT product, Category.id as cat, Category.type, COUNT(*) as C FROM Waste LEFT JOIN Category ON Category.id = Waste.category WHERE product = '%s' GROUP BY Category.id ORDER BY COUNT(*) desc LIMIT 1", array($row['id']));
+								if ($chkRow[0]['C'] >= $this->learn) {
+									$this->db->exec("UPDATE Product set learned = 1, potential = 0, category = '%s' WHERE id = '%s'", array($chkRow[0]['cat'], $chkRow[0]['product']));
 									$arr = array('category' => $chkRow['type']);
 								} else {
 									$arr = array('category' => 'Unknown');
 								}
-								mysql_free_result($chk);
 							}
-							mysql_free_result($chkCat);
 						}
 					} else {
-						mysql_query(vsprintf("INSERT INTO Waste (client, product, category) VALUES ('%s', '%s', '%s');",
-							array(mysql_real_escape_string($this->client), $row['id'], $row['cat'])));
+						$this->db->exec("INSERT INTO Waste (client, product, category) VALUES ('%s', '%s', '%s');", array($this->client, $row['id'], $row['cat']));
 						$arr = array('category' => $row['type']);
 					}
 				}
 			}
-			mysql_free_result($result);
-
 			return $arr;
 		}
 	}
@@ -114,12 +104,7 @@ class WasteHandler {
 			$state = 405;
 			return array("error", "invocation of get method requires HTTP GET");
 		} else {
-			$result = mysql_query(vsprintf("SELECT * FROM %s;", array(mysql_real_escape_string(Commons::getParam('table', $api, 3)))));
-			$rows = array();
-			while($row = mysql_fetch_assoc($result)) {
-				$rows[] = $row;
-			}
-			return $rows;
+			return $this->db->query("SELECT * FROM %s;", array(Commons::getParam('table', $api, 3)));
 		}
 	}
 }

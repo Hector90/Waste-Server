@@ -3,15 +3,10 @@
 # Including API and handler classes.
 require_once('./lib/API.php');
 require_once('./lib/WasteHandler.php');
-
-# Initializing database connection parameters for API.
-API::$DB_HOST = "localhost";
-API::$DB_USER = "waste";
-API::$DB_PASS = "RoskaKuskit";
-API::$DB_NAME = "waste";
+require_once('./lib/Database.php');
 
 # Initializing API and handler.
-$api = new API("/waste", new WasteHandler(5));
+$api = new API("/waste", new WasteHandler(5, new Database("localhost", "waste", "RoskaKuskit", "waste")));
 
 # Processing RESTful API call
 $api->process();
