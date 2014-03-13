@@ -6,7 +6,7 @@ Description:
 
 Authors:
 	Heikki Sopanen <hsopanen@gmail.com>
-	...
+	Hector Simo Bueno <emal>
 
 License:
 	TODO
