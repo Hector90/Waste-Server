@@ -54,7 +54,7 @@ class WasteHandler {
 	# API functions.
 	#
 
-	public function identify($state, $api) {
+	public function identify(&$state, $api) {
 		if ($api->method != 'GET') {
 			$state = 405;
 			return array("error", "invocation of get method requires HTTP GET");
@@ -99,11 +99,11 @@ class WasteHandler {
 		}
 	}
 
-	public function synch($state, $api) {
+	public function synch(&$state, $api) {
 		
 	}
 	
-	public function get($state, $api) {
+	public function get(&$state, $api) {
 		if ($api->method != 'GET') {
 			$state = 405;
 			return array("error", "invocation of get method requires HTTP GET");

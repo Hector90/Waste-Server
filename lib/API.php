@@ -39,13 +39,13 @@ class API {
 		header("Content-Type: application/json");
 		$response = NULL;
 		$state = 200;
-		if (!$this->handler->authenticate(&$response, $this)) {
+		if (!$this->handler->authenticate($response, $this)) {
 			$state = 401;
 		} else if (!method_exists($this->handler, $this->call)) {
 			$state = 405;
 			$response = array("error" => "Invalid method called");
 		} else {
-			$response = $this->handler->{$this->call}(&$state, $this);
+			$response = $this->handler->{$this->call}($state, $this);
 		}
 		$this->endTime = microtime(true);
 		echo $this->toJSON($response, $state);
