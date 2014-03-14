@@ -16,7 +16,20 @@ class WasteHandler {
 	function __construct($learn, $database) {
 		$this->learn = $learn ? $learn : 0;
 		$this->db = $database;
-	}	
+	}
+	
+	#
+	# Private functions, these are not exposed to API.
+	#
+	private function learn($productId) {
+		$prod = $this->db->query("SELECT product, Category.id as cat, Category.type, COUNT(*) as C FROM Waste LEFT JOIN Category ON Category.id = Waste.category WHERE product = '%s' GROUP BY Category.id ORDER BY COUNT(*) desc LIMIT 1", array($productId));
+		if ($prod[0]['C'] >= $this->learn) {
+			$this->db->exec("UPDATE Product set learned = 1, potential = 0, category = '%s' WHERE id = '%s'", array($prod[0]['cat'], $prod[0]['product']));
+			return $prod[0]['type'];
+		} else {
+			return 'Unknown';
+		}
+	}
 		
 	#
 	# API function to authenticate incoming call.
@@ -60,13 +73,13 @@ class WasteHandler {
 			return array("error" => "invocation of get method requires HTTP GET");
 		} else {
 			$arr = NULL;
-			$result = $this->db->query("SELECT Product.id, Product.name, Product.potential, Category.type, Category.id as cat FROM Product LEFT JOIN Category ON Category.id = Product.category WHERE bar_code = '%s'", array(Commons::getParam('bar_code', $api, 3)));
-			if (count($result) == 0) {
+			$prod = $this->db->query("SELECT Product.id, Product.name, Product.potential, Category.type, Category.id as cat FROM Product LEFT JOIN Category ON Category.id = Product.category WHERE bar_code = '%s'", array(Commons::getParam('bar_code', $api, 3)));
+			if (count($prod) == 0) {
 				# Insert new product
 				$arr = array('category' => 'Unknown');
 				$this->db->exec("INSERT INTO Product (bar_code, category, potential) VALUES ('%s', (SELECT id FROM Category WHERE type = 'Unknown'), 1)", array(Commons::getParam('bar_code', $api, 3)));
 			} else {
-				foreach ($result as &$row) {
+				foreach ($prod as &$row) {
 					# Check if potential
 					if ($row['potential'] == "1") {
 						if (Commons::getParam('category', $api, 4) == NULL) {
@@ -74,19 +87,13 @@ class WasteHandler {
 							$arr = array('error' => 'category required');
 						} else {
 							# Check if category exists.
-							$chkCat = $this->db->query("SELECT id FROM Category WHERE type = '%s'", array(Commons::getParam('category', $api, 4)));
-							if (count($chkCat) == 0) {
+							$cat = $this->db->query("SELECT id FROM Category WHERE type = '%s'", array(Commons::getParam('category', $api, 4)));
+							if (count($cat) == 0) {
 								$arr = array("error" => "Invalid category specified.");
 								$state = 405;
 							} else {						
 								$this->db->exec("INSERT INTO Waste (client, product, category) VALUES ('%s', '%s', (SELECT id FROM Category WHERE type = '%s'));", array($this->client, $row['id'], Commons::getParam('category', $api, 4)));
-								$chkRow = $this->db->query("SELECT product, Category.id as cat, Category.type, COUNT(*) as C FROM Waste LEFT JOIN Category ON Category.id = Waste.category WHERE product = '%s' GROUP BY Category.id ORDER BY COUNT(*) desc LIMIT 1", array($row['id']));
-								if ($chkRow[0]['C'] >= $this->learn) {
-									$this->db->exec("UPDATE Product set learned = 1, potential = 0, category = '%s' WHERE id = '%s'", array($chkRow[0]['cat'], $chkRow[0]['product']));
-									$arr = array('category' => $chkRow[0]['type']);
-								} else {
-									$arr = array('category' => 'Unknown');
-								}
+								$arr = array('category' => $this->learn($row['id']));
 							}
 						}
 					} else {
@@ -118,6 +125,7 @@ class WasteHandler {
 						array_push($prod, array("id" => $this->db->lastId()));
 					}
 					if ($this->db->exec("INSERT INTO Waste (client, product, category, time_disposed) VALUES ('%s', '%s', '%s', '%s');", array($this->client, $prod[0]['id'], $cat[0]['id'], $row['timestamp']))) {
+						$this->learn($prod[0]['id']);
 						$row['state'] = 200;
 					} else {
 						$row['state'] = 500;
