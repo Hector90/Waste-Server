@@ -132,7 +132,7 @@ class WasteHandler {
 	public function get(&$state, $api) {
 		if ($api->method != 'GET') {
 			$state = 405;
-			return array("error", "invocation of get method requires HTTP GET");
+			return array("error" => "invocation of get method requires HTTP GET");
 		} else {
 			return $this->db->query("SELECT * FROM %s;", array(Commons::getParam('table', $api, 3)));
 		}
