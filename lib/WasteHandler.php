@@ -57,7 +57,7 @@ class WasteHandler {
 	public function identify(&$state, $api) {
 		if ($api->method != 'GET') {
 			$state = 405;
-			return array("error", "invocation of get method requires HTTP GET");
+			return array("error" => "invocation of get method requires HTTP GET");
 		} else {
 			$arr = NULL;
 			$result = $this->db->query("SELECT Product.id, Product.name, Product.potential, Category.type, Category.id as cat FROM Product LEFT JOIN Category ON Category.id = Product.category WHERE bar_code = '%s'", array(Commons::getParam('bar_code', $api, 3)));
@@ -102,7 +102,7 @@ class WasteHandler {
 	public function synch(&$state, $api) {
 		if ($api->method != 'POST' && $api->method != 'PUT') {
 			$state = 405;
-			return array("error", "invocation of synch method requires HTTP POST or PUT");
+			return array("error" => "invocation of synch method requires HTTP POST or PUT");
 		} else {
 			$entity = file_get_contents('php://input');
 			$decoded = json_decode($entity, true);
