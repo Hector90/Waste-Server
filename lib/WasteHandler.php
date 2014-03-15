@@ -21,6 +21,7 @@ class WasteHandler {
 	#
 	# Private functions, these are not exposed to API.
 	#
+	
 	private function learn($productId) {
 		$prod = $this->db->query("SELECT product, Category.id as cat, Category.type, COUNT(*) as C FROM Waste LEFT JOIN Category ON Category.id = Waste.category WHERE product = '%s' GROUP BY Category.id ORDER BY COUNT(*) desc LIMIT 1", array($productId));
 		if ($prod[0]['C'] >= $this->learn) {
@@ -30,7 +31,7 @@ class WasteHandler {
 			return 'Unknown';
 		}
 	}
-		
+	
 	#
 	# API function to authenticate incoming call.
 	#
@@ -39,8 +40,8 @@ class WasteHandler {
 	# 	return true;
 	# }
 	
-	public function authenticate($response, $api) {
-		if (!Commons::getParam('serial', $api, 2) && !Commons::getParam('email') && !Commons::getParam('pin')) {
+	public function authenticate(&$response, &$api) {
+		if (!Commons::getParam('serial', $api, 2) && !Commons::getParam('email') && !Commons::getParam('pin') && !Commons::getParam('sid')) {
 			$response = array("error" => "Authentication data missing.");
 			return false;
 		} 
@@ -51,8 +52,27 @@ class WasteHandler {
 		}
 		if (Commons::getParam('email') && Commons::getParam('pin')) {
 			$data = $this->db->query("SELECT * FROM Clients WHERE email = '%s' AND pin = SHA1('%s');", array(Commons::getParam('email'), Commons::getParam('pin')));
-			if (count($data) == 0) return false;
+			if (count($data) == 0) {
+				$response = array("error" => "Invalid pin or email.");
+				return false;
+			}
 			$this->session = "PROACTIVE";
+			session_start();
+			$api->sid = session_id();
+			$_SESSION['user.name'] = $data[0]['email'];
+			$_SESSION['user.id'] = $data[0]['id'];
+			$_SESSION['valid'] = true;
+		}
+		if (Commons::getParam('sid')) {
+			session_id(Commons::getParam('sid'));
+			session_start();
+			if (!$_SESSION['valid']) {
+				$response = array("error" => "Invalid session.");
+				session_destroy();
+				return false;
+			} else {
+				$api->sid = session_id();
+			}
 		}
 		if (count($data) == 0) {
 			$this->db->exec("INSERT INTO Clients (serial_number, email, location) VALUES ('%s', 'n/a', 'n/a');", array(Commons::getParam('serial', $api, 2)));
@@ -145,5 +165,22 @@ class WasteHandler {
 			return $this->db->query("SELECT * FROM %s;", array(Commons::getParam('table', $api, 3)));
 		}
 	}
+	
+	public function logout(&$state, $api) {
+		if ($api->method != 'GET') {
+			$state = 405;
+			return array("error" => "invocation of logout method requires HTTP GET");
+		} else {
+			$response = array();
+			if ($_SESSION['valid']) {
+				if (session_destroy()) $response = array("result" => "Logged out.");
+				else $response = array("error" => "Logout failed.");
+			} else {
+				 $response = array("error" => "Invalid session.");
+			}
+			return $response;
+		}
+	}
+	
 }
 ?>

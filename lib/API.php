@@ -18,14 +18,16 @@ class API {
 	}
 	
 	private function toJSON($data, $state) {
-		return json_encode(array(
+		$response = array(
 			'method' => $this->method,
 			'call' => $this->call,
 			'state' => $state,
 			'message' => Commons::getStateMessage($state),
 			'response' => $data,
 			'server_time' => round(($this->endTime-$this->startTime)*1000, 2)
-		));
+		);
+		if (property_exists($this, 'sid')) $response['sid'] = $this->sid;
+		return json_encode($response);
 	}
 	
 	#
