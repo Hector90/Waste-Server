@@ -93,18 +93,18 @@ class WasteHandler {
 			return array("error" => "invocation of get method requires HTTP GET");
 		} else {
 			$arr = NULL;
-			$prod = $this->db->query("SELECT Product.id, Product.name, Product.potential, Category.type, Category.id as cat FROM Product LEFT JOIN Category ON Category.id = Product.category WHERE bar_code = '%s'", array(Commons::getParam('bar_code', $api, 3)));
+			$prod = $this->db->query("SELECT Product.id, Product.name, Product.potential, Product.learned, Category.type, Category.id as cat FROM Product LEFT JOIN Category ON Category.id = Product.category WHERE bar_code = '%s'", array(Commons::getParam('bar_code', $api, 3)));
 			if (count($prod) == 0) {
 				# Insert new product
-				$arr = array('category' => 'Unknown');
+				$arr = array('category' => 'Unknown', 'learned' => 0);
 				$this->db->exec("INSERT INTO Product (bar_code, category, potential) VALUES ('%s', (SELECT id FROM Category WHERE type = 'Unknown'), 1)", array(Commons::getParam('bar_code', $api, 3)));
 			} else {
 				foreach ($prod as &$row) {
 					# Check if potential
 					if ($row['potential'] == "1") {
 						if (Commons::getParam('category', $api, 4) == NULL) {
-							$state = 405;
-							$arr = array('error' => 'category required');
+							$state = 200;
+							$arr = array('category' => 'Unknown', 'learned' => 0);
 						} else {
 							# Check if category exists.
 							$cat = $this->db->query("SELECT id FROM Category WHERE type = '%s'", array(Commons::getParam('category', $api, 4)));
@@ -113,12 +113,12 @@ class WasteHandler {
 								$state = 405;
 							} else {						
 								$this->db->exec("INSERT INTO Waste (client, product, category) VALUES ('%s', '%s', (SELECT id FROM Category WHERE type = '%s'));", array($this->client, $row['id'], Commons::getParam('category', $api, 4)));
-								$arr = array('category' => $this->learn($row['id']));
+								$arr = array('category' => $this->learn($row['id']), 'learned' => $row['learned']);
 							}
 						}
 					} else {
 						$this->db->exec("INSERT INTO Waste (client, product, category) VALUES ('%s', '%s', '%s');", array($this->client, $row['id'], $row['cat']));
-						$arr = array('category' => $row['type']);
+						$arr = array('category' => $row['type'], 'learned' => $row['learned']);
 					}
 				}
 			}
