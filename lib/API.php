@@ -27,7 +27,7 @@ class API {
 			'server_time' => round(($this->endTime-$this->startTime)*1000, 2)
 		);
 		if (property_exists($this, 'sid')) $response['sid'] = $this->sid;
-		return json_encode($response);
+		return Commons::getParam('callback') != null ? Commons::getParam('callback')."(".json_encode($response).")" : json_encode($response);
 	}
 	
 	#
