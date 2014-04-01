@@ -182,5 +182,13 @@ class WasteHandler {
 		}
 	}
 	
+	public function login(&$state, $api) {
+		if ($_SESSION['valid']) {
+			return array("reason" => "OK");
+		} else {
+			return array("reason" => "Invalid login.");
+		}
+	}
+	
 }
 ?>
