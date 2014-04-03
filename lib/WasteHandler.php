@@ -74,7 +74,7 @@ class WasteHandler {
 				$api->sid = session_id();
 			}
 		}
-		if (count($data) == 0) {
+		if (count($data) == 0 && Commons::getParam('serial', $api, 2) != null) {
 			$this->db->exec("INSERT INTO Clients (serial_number, email, location) VALUES ('%s', 'n/a', 'n/a');", array(Commons::getParam('serial', $api, 2)));
 			$this->db->exec("INSERT INTO ClientRel (parent, child, type) VALUES ((SELECT id FROM Clients WHERE email = 'admin@waste'), '%s', 'ALL');", array($this->db->lastId()));
 			$data = $this->db->query("SELECT * FROM Clients WHERE serial_number = '%s';", array(Commons::getParam('serial', $api, 2)));
