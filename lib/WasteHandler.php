@@ -41,17 +41,17 @@ class WasteHandler {
 	# }
 	
 	public function authenticate(&$response, &$api) {
-		if (!Commons::getParam('serial', $api, 2) && !Commons::getParam('email') && !Commons::getParam('pin') && !Commons::getParam('sid')) {
+		if (!Commons::getParam('serial', $api, 2) && !Commons::getParam('email', null, null) && !Commons::getParam('pin', null, null) && !Commons::getParam('sid', null, null)) {
 			$response = array("error" => "Authentication data missing.");
 			return false;
 		} 
 		$data = array();
-		if (Commons::getParam('serial', $api, 2) && !Commons::getParam('email') && !Commons::getParam('pin')) {
+		if (Commons::getParam('serial', $api, 2) && !Commons::getParam('email', null, null) && !Commons::getParam('pin', null, null)) {
 			$data = $this->db->query("SELECT * FROM Clients WHERE serial_number = '%s';", array(Commons::getParam('serial', $api, 2)));
 			$this->session = "READ_ONLY";
 		}
-		if (Commons::getParam('email') && Commons::getParam('pin')) {
-			$data = $this->db->query("SELECT * FROM Clients WHERE email = '%s' AND pin = SHA1('%s');", array(Commons::getParam('email'), Commons::getParam('pin')));
+		if (Commons::getParam('email', null, null) && Commons::getParam('pin', null, null)) {
+			$data = $this->db->query("SELECT * FROM Clients WHERE email = '%s' AND pin = SHA1('%s');", array(Commons::getParam('email', null, null), Commons::getParam('pin', null, null)));
 			if (count($data) == 0) {
 				$response = array("error" => "Invalid pin or email.");
 				return false;
@@ -63,8 +63,8 @@ class WasteHandler {
 			$_SESSION['user.id'] = $data[0]['id'];
 			$_SESSION['valid'] = true;
 		}
-		if (Commons::getParam('sid')) {
-			session_id(Commons::getParam('sid'));
+		if (Commons::getParam('sid', null, null)) {
+			session_id(Commons::getParam('sid', null, null));
 			session_start();
 			if (!$_SESSION['valid']) {
 				$response = array("error" => "Invalid session.");
