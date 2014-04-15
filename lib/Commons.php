@@ -13,8 +13,8 @@ class Commons {
         return ($status[$state])?$status[$state]:$status[500];	
 	}
 	
-	public static function getParam($name, $api, $pathIndex) {
-		$val = ($_SERVER['REQUEST_METHOD'] == 'POST' && $_POST[$name] ? $_POST[$name] : ($_SERVER['REQUEST_METHOD'] != 'POST' && $_GET[$name] ? $_GET[$name] : NULL));
+	public static function getParam($name, $api, $pathIndex) { 
+		$val = ($_SERVER['REQUEST_METHOD'] == 'POST' && array_key_exists($name, $_POST) ? $_POST[$name] : ($_SERVER['REQUEST_METHOD'] != 'POST' && array_key_exists($name, $_GET) ? $_GET[$name] : NULL));
 		if ($val == NULL && $api != NULL && $pathIndex != NULL && count($api->path_parts) >= $pathIndex) {
 			$val = $api->path_parts[$pathIndex];
 		}
