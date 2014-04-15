@@ -21,7 +21,7 @@ class Database {
 	}
 	
 	public function query($clause, $params) {
-		$ref = mysql_query($this->prepareClause($clause, $params), $this->con);
+		$ref = mysql_query($this->prepareClause($clause, $params), $this->con) or die(mysql_error());
 		$resp = array();
 		while ($row = mysql_fetch_assoc($ref)) {
 			array_push($resp, $row);
