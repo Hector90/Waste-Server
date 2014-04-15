@@ -11,7 +11,7 @@ Server sources codes for Waste Management project.
 Authors
 -------
 Heikki Sopanen <hsopanen@gmail.com>,
-Hector Simo Bueno <emal>
+Hector Simo Bueno <hectorsimobueno@gmail.com>
 
 License
 -------
