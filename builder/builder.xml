@@ -54,4 +54,11 @@
 			FOREIGN KEY(client) REFERENCES Clients(id) ON DELETE CASCADE
 		) ENGINE InnoDB;
 	</Table>
+        <Table name="Serials" order="6">
+		CREATE TABLE Serials (
+			id INT NOT NULL,
+			PRIMARY KEY(id),
+
+		) ENGINE InnoDB;
+	</Table>
 </Database>
