@@ -19,4 +19,13 @@
 		INSERT INTO ClientRel (parent, child, type) VALUES
 		((SELECT id FROM Clients where email = 'admin@waste'), (SELECT id FROM Clients where email = 'default@waste'), 'ALL');
 	</Statement>
+        <Statement name="ClientRel" order="4">
+		INSERT INTO Serials (id) VALUES
+		('2525');
+                ('2987');
+                ('5245');
+                ('1234');
+            
+	</Statement>
 </Data>
+
