@@ -20,6 +20,13 @@ class Commons {
 		}
 		return $val;
 	}
+        function valid_serial($check_serial,$ob){
+            $data = $ob->db->query("SELECT * FROM Serials WHERE serial_number = '%s';",array($check_serial));
+            if (count($data) == 0) {
+                return false;
+            }
+            return true;
+        }
 	
 }
 
