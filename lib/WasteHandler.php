@@ -8,7 +8,7 @@ require_once('Commons.php');
 require_once('Database.php');
 
 class WasteHandler {
-
+        
 	#
 	# Constructor.
 	#
@@ -41,6 +41,7 @@ class WasteHandler {
 	# }
 	
 	public function authenticate(&$response, &$api) {
+            
 		if (!Commons::getParam('serial', $api, 2) && !Commons::getParam('email', null, null) && !Commons::getParam('pin', null, null) && !Commons::getParam('sid', null, null)) {
 			$response = array("error" => "Authentication data missing.");
 			return false;
@@ -63,6 +64,9 @@ class WasteHandler {
 			$_SESSION['user.id'] = $data[0]['id'];
 			$_SESSION['valid'] = true;
 		}
+                
+                
+                
 		if (Commons::getParam('sid', null, null)) {
 			session_id(Commons::getParam('sid', null, null));
 			session_start();
@@ -74,19 +78,30 @@ class WasteHandler {
 				$api->sid = session_id();
 			}
 		}
-		if (count($data) == 0 && Commons::getParam('serial', $api, 2) != null) {
-			$this->db->exec("INSERT INTO Clients (serial_number, email, location) VALUES ('%s', 'n/a', 'n/a');", array(Commons::getParam('serial', $api, 2)));
+                /*
+                 * 
+                 * I think this was a kind of registration not needed anymore or it is? 
+                 *
+		if (count($data) == 0 && Commons::getParam('serial_add', $api, 2) != null) {
+			$this->db->exec("INSERT INTO Clients (serial_number, email, location) VALUES ('%s', 'n/a', 'n/a');", array(Commons::getParam('serial_add', $api, 2)));
 			$this->db->exec("INSERT INTO ClientRel (parent, child, type) VALUES ((SELECT id FROM Clients WHERE email = 'admin@waste'), '%s', 'ALL');", array($this->db->lastId()));
-			$data = $this->db->query("SELECT * FROM Clients WHERE serial_number = '%s';", array(Commons::getParam('serial', $api, 2)));
+			$data = $this->db->query("SELECT * FROM Clients WHERE serial_number = '%s';", array(Commons::getParam('serial_add', $api, 2)));
 		}
-		$this->client = $data[0]['id'];
+                */
+                
+                if(isset($data[0]['id'])){
+                    $this->client = $data[0]['id'];
+                }
+		
 		return true;
 	}
 	
 	#
 	# API functions.
 	#
-
+        
+        
+        
 	public function identify(&$state, $api) {
 		if ($api->method != 'GET') {
 			$state = 405;
@@ -188,6 +203,36 @@ class WasteHandler {
 		} else {
 			return array("reason" => "Invalid login.");
 		}
+	}
+        /*
+                 * Doing the registration in the way of the client and the user are the same and 
+                 * when you registre you also claim serial, will modify it if we decide to separate
+                 * users and clients
+                 */
+        public function register(&$state, $api) {
+		
+                if (Commons::getParam('newuser_email', null, null) ) {
+			$result = $this->db->query("SELECT * FROM Clients WHERE email = '%s' OR serial_number = '%s';", array(Commons::getParam('newuser_email', null, null),Commons::getParam('serial', null, null)));
+			if(Commons::valid_serial(Commons::getParam('serial', null, null),$this)){
+                            if (count($result) == 0) {
+                                $this->db->exec("INSERT INTO Clients (serial_number, email, pin ,location) VALUES('%s', '%s', SHA1('%s'), '%s')",array(Commons::getParam('serial', null, null),Commons::getParam('newuser_email', null, null),Commons::getParam('pin', null, null),Commons::getParam('location', null, null)));
+                                $response = array("message" => "Register successful");
+                                return $response;
+                                
+                            }else{
+                                $response = array("error" => "This email or serial are already on use.");
+                                return $response;
+                            }
+                        }else{
+                            $response = array("error" => "This is not a valid serial");
+                            return $response;
+                           
+                        }
+			
+		}else{
+                      $response = array("error" => "insufficient data");
+                      return $response;
+                }
 	}
 	
 }
