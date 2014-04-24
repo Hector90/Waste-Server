@@ -78,16 +78,17 @@ class WasteHandler {
 				$api->sid = session_id();
 			}
 		}
-                /*
-                 * 
-                 * I think this was a kind of registration not needed anymore or it is? 
-                 *
+		/*
+		* 
+		* I think this was a kind of registration not needed anymore or it is? 
+		* -> We still need this, idea was that client (raspberry) can register independently to the system and user may claim device by entering correct S/N.
+		*
+		*/
 		if (count($data) == 0 && Commons::getParam('serial_add', $api, 2) != null) {
 			$this->db->exec("INSERT INTO Clients (serial_number, email, location) VALUES ('%s', 'n/a', 'n/a');", array(Commons::getParam('serial_add', $api, 2)));
 			$this->db->exec("INSERT INTO ClientRel (parent, child, type) VALUES ((SELECT id FROM Clients WHERE email = 'admin@waste'), '%s', 'ALL');", array($this->db->lastId()));
 			$data = $this->db->query("SELECT * FROM Clients WHERE serial_number = '%s';", array(Commons::getParam('serial_add', $api, 2)));
 		}
-                */
                 
                 if(isset($data[0]['id'])){
                     $this->client = $data[0]['id'];
@@ -99,8 +100,6 @@ class WasteHandler {
 	#
 	# API functions.
 	#
-        
-        
         
 	public function identify(&$state, $api) {
 		if ($api->method != 'GET') {
@@ -235,5 +234,36 @@ class WasteHandler {
                 }
 	}
 	
+	public function query(&$state, $api) {
+		if ($api->method != 'GET') {
+			$state = 405;
+			return array("error" => "invocation of get method requires HTTP GET");
+		} else if (!file_exists('./res/queries.xml')) {
+			$state = 405;
+			return array("error" => "Cannot locate queries file!");
+		} else {
+			$queries = simplexml_load_file('./res/queries.xml');
+			$query = "";
+			foreach ($queries->Query as $q) {
+				if ($q->attributes()->name == Commons::getParam('query', $api, 3)) {
+					$query = $q[0];
+				}
+			}
+			if ($query == '') return array("error" => "Invalid query.");			
+			$tokens = array(
+				'ClientId' => $this->client,
+				'CurrentMonthFD' => date('Y-m-01')." 00:00:00",
+				'CurrentMonthLD' => date('Y-m-t')." 23:59:59",
+				'CurrentWeekFD' => date('Y-m-d', strtotime('last Sunday', time()))." 00:00:00",
+				'CurrentWeekLD' => date('Y-m-d', strtotime('next Sunday', time()))." 23:59:59",
+				'CurrentYearFD' => date('Y-m-d', strtotime('first day of January', time()))." 00:00:00",
+				'CurrentYearLD' => date('Y-m-d', strtotime('last day of December', time()))." 23:59:59",
+			);
+			foreach ($tokens as $key => $val) {
+				$query = str_replace('{?'.$key.'}', $val, $query);
+			}
+			return $this->db->query($query, null);
+		}
+	}
 }
 ?>

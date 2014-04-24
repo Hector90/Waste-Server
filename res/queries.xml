@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Queries>
+	<Query name="qProducts">
+		SELECT 
+			Product.id, 
+			bar_code, 
+			name, 
+			Category.type as category, 
+			potential, 
+			learned 
+		FROM Product 
+			LEFT JOIN Category on Category.id = Product.category;
+	</Query>
+	<Query name="qMyWaste">
+		SELECT 
+			Clients.serial_number, 
+			Product.bar_code, 
+			Category.type, 
+			Waste.time_disposed 
+		FROM Waste 
+			LEFT JOIN Clients ON Clients.id = Waste.client 
+			LEFT JOIN Product ON Product.id = Waste.product 
+			LEFT JOIN Category ON Category.id = Waste.category 
+		WHERE Waste.client = {?ClientId};
+	</Query>
+	<Query name="qMyWasteCurrentMonth">
+		SELECT 
+			Category.type,
+			COUNT(*) as count
+		FROM Waste 
+			LEFT JOIN Clients ON Clients.id = Waste.client 
+			LEFT JOIN Product ON Product.id = Waste.product 
+			LEFT JOIN Category ON Category.id = Waste.category 
+		WHERE Waste.client = {?ClientId}
+			AND time_disposed BETWEEN '{?CurrentMonthFD}' AND '{?CurrentMonthLD}'
+		GROUP BY Category.type;
+	</Query>
+	<Query name="qAllWaste">
+		SELECT 
+			Clients.serial_number, 
+			Product.bar_code, 
+			Category.type, 
+			Waste.time_disposed 
+		FROM Waste 
+			LEFT JOIN Clients ON Clients.id = Waste.client 
+			LEFT JOIN Product ON Product.id = Waste.product 
+			LEFT JOIN Category ON Category.id = Waste.category;
+	</Query>
+</Queries>
