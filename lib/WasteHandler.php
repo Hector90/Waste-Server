@@ -263,7 +263,6 @@ class WasteHandler {
 			foreach ($tokens as $key => $val) {
 				$query = str_replace('{?'.$key.'}', $val, $query);
 			}
-			print $query;
 			return $this->db->query($query, null);
 		}
 	}
