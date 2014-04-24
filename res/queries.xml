@@ -36,6 +36,17 @@
 			AND time_disposed BETWEEN '{?CurrentMonthFD}' AND '{?CurrentMonthLD}'
 		GROUP BY Category.type;
 	</Query>
+	<Query name="qAllWasteCurrentMonth" title="All Waste - Current month">
+		SELECT 
+			Category.type,
+			COUNT(*) as count
+		FROM Waste 
+			LEFT JOIN Clients ON Clients.id = Waste.client 
+			LEFT JOIN Product ON Product.id = Waste.product 
+			LEFT JOIN Category ON Category.id = Waste.category 
+		WHERE time_disposed BETWEEN '{?CurrentMonthFD}' AND '{?CurrentMonthLD}'
+		GROUP BY Category.type;
+	</Query>
 	<Query name="qAllWaste" title="All Waste">
 		SELECT 
 			Clients.serial_number, 
