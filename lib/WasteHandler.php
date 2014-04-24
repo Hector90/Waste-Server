@@ -76,6 +76,7 @@ class WasteHandler {
 				return false;
 			} else {
 				$api->sid = session_id();
+				$this->client = $_SESSION['user.id'];
 			}
 		}
 		/*
@@ -262,6 +263,7 @@ class WasteHandler {
 			foreach ($tokens as $key => $val) {
 				$query = str_replace('{?'.$key.'}', $val, $query);
 			}
+			print $query;
 			return $this->db->query($query, null);
 		}
 	}
