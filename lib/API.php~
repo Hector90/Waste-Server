@@ -58,7 +58,7 @@ class API {
 		$this->uri = urldecode($_SERVER['REQUEST_URI']);
 		$uri_parts = explode('?', $this->uri, 2);
 		$this->path = str_replace($this->root, "", $uri_parts[0]);
-
+echo "hola", $_SERVER['REQUEST_URI'];
 		$this->path_parts = explode('/', $this->path);
 		$this->call = Commons::getParam('method', null, null) ? Commons::getParam('method', null, null) : $this->path_parts[1];
 	}

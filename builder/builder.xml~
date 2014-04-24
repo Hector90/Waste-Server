@@ -15,7 +15,6 @@
 			email VARCHAR(256) NOT NULL,
 			pin VARCHAR(40) DEFAULT NULL,
 			location VARCHAR(256) NOT NULL,
-                        privi_lvl INT(2) DEFAULT '0',
 			PRIMARY KEY(id)
 		) ENGINE InnoDB;
 	</Table>
@@ -58,11 +57,8 @@
         <Table name="Serials" order="6">
 		CREATE TABLE Serials (
 			id INT NOT NULL,
-                        claimed INT(1) NOT NULL,
 			PRIMARY KEY(id),
-                        
 
 		) ENGINE InnoDB;
 	</Table>
 </Database>
-

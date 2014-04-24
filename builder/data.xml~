@@ -11,22 +11,21 @@
 		('Mixed');
 	</Statement>
 	<Statement name="Clients" order="2">
-		INSERT INTO Clients (serial_number, email, pin, location,privi_lvl) VALUES
-		('ADMIN', 'admin@waste', SHA1('1234'), 'n/a','2'),
-		('DEFAULT', 'default@waste', SHA1('1234'), 'n/a','0');
+		INSERT INTO Clients (serial_number, email, pin, location) VALUES
+		('ADMIN', 'admin@waste', SHA1('1234'), 'n/a'),
+		('DEFAULT', 'default@waste', SHA1('1234'), 'n/a');
 	</Statement>
 	<Statement name="ClientRel" order="3">
 		INSERT INTO ClientRel (parent, child, type) VALUES
 		((SELECT id FROM Clients where email = 'admin@waste'), (SELECT id FROM Clients where email = 'default@waste'), 'ALL');
 	</Statement>
         <Statement name="ClientRel" order="4">
-		INSERT INTO Serials (id,claimed) VALUES
-		('2525','0');
-                ('2987','0');
-                ('5245','0');
-                ('1234','0');
+		INSERT INTO Serials (id) VALUES
+		('2525');
+                ('2987');
+                ('5245');
+                ('1234');
             
 	</Statement>
 </Data>
-
 

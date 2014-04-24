@@ -6,7 +6,7 @@ require_once('./lib/WasteHandler.php');
 require_once('./lib/Database.php');
 
 # Initializing API and handler.
-$api = new API("/waste", new WasteHandler(5, new Database("localhost", "root", "", "waste")));
+$api = new API("/waste", new WasteHandler(5, new Database("localhost", "waste_user", "pass", "waste")));
 
 # Processing RESTful API call
 $api->process();
