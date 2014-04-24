@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <Queries>
-	<Query name="qProducts">
+	<Query name="qProducts" title="Products">
 		SELECT 
 			Product.id, 
 			bar_code, 
@@ -12,7 +12,7 @@
 		FROM Product 
 			LEFT JOIN Category on Category.id = Product.category;
 	</Query>
-	<Query name="qMyWaste">
+	<Query name="qMyWaste" title="My Waste">
 		SELECT 
 			Clients.serial_number, 
 			Product.bar_code, 
@@ -24,7 +24,7 @@
 			LEFT JOIN Category ON Category.id = Waste.category 
 		WHERE Waste.client = {?ClientId};
 	</Query>
-	<Query name="qMyWasteCurrentMonth">
+	<Query name="qMyWasteCurrentMonth" title="My Waste - Current month">
 		SELECT 
 			Category.type,
 			COUNT(*) as count
@@ -36,7 +36,7 @@
 			AND time_disposed BETWEEN '{?CurrentMonthFD}' AND '{?CurrentMonthLD}'
 		GROUP BY Category.type;
 	</Query>
-	<Query name="qAllWaste">
+	<Query name="qAllWaste" title="All Waste">
 		SELECT 
 			Clients.serial_number, 
 			Product.bar_code, 

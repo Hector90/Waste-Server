@@ -265,5 +265,23 @@ class WasteHandler {
 			return $this->db->query($query, null);
 		}
 	}
+
+	public function listQueries(&$state, $api) {
+		if ($api->method != 'GET') {
+			$state = 405;
+			return array("error" => "invocation of get method requires HTTP GET");
+		} else if (!file_exists('./res/queries.xml')) {
+			$state = 405;
+			return array("error" => "Cannot locate queries file!");
+		} else {
+			$queries = simplexml_load_file('./res/queries.xml');
+			$query = "";
+			$data = array();
+			foreach ($queries->Query as $q) {
+				array_push($data, array("title" => (string)$q->attributes()->title, "name" => (string)$q->attributes()->name));
+			}
+			return $data;
+		}
+	}
 }
 ?>
