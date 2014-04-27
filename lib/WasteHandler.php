@@ -313,8 +313,76 @@ class WasteHandler {
 			return $data;
 		}
 	}
-        
-        
+	
+	public function update(&$state, $api) {
+		#TODO: security
+		if ($api->method != 'POST') {
+			$state = 405;
+			return array("error" => "invocation of update method requires HTTP POST");
+		} else {
+			$entity = file_get_contents('php://input');
+			$decoded = json_decode($entity, true);
+			if ($decoded == NULL) {
+				$state = 500;
+				return array("error" => "Cannot parse JSON payload.");
+			} else if (!array_key_exists('table', $decoded) || !array_key_exists('id', $decoded)) {
+				$state = 500;
+				return array("error" => "Invocation of update requires attributes table and id.");
+			} else {
+				$statement = "UPDATE ".$decoded['table']." SET {?attrs} WHERE id = ".$decoded['id'];
+				$attrs = "";
+				foreach ($decoded as $attr => $val) {
+					if ($attr != 'table' && $attr != 'id') {
+						$attrs .= $attr." = '".$val."',";
+					}
+				}
+				if ($this->db->exec(str_replace('{?attrs}', substr($attrs, 0, strlen($attrs)-1), $statement), null)) {
+					return array('reason' => 'OK');
+				} else {
+					$state = 500;
+					return array("error" => mysql_error());
+				}
+			}
+		}
+	}
+
+	public function insert(&$state, $api) {
+		#TODO: security
+		if ($api->method != 'POST') {
+			$state = 405;
+			return array("error" => "invocation of insert method requires HTTP POST");
+		} else {
+			$entity = file_get_contents('php://input');
+			$decoded = json_decode($entity, true);
+			if ($decoded == NULL) {
+				$state = 500;
+				return array("error" => "Cannot parse JSON payload.");
+			} else if (!array_key_exists('table', $decoded)) {
+				$state = 500;
+				return array("error" => "Invocation of insert requires attribute table.");
+			} else {
+				$statement = "INSERT INTO ".$decoded['table']." ({?attrs}) VALUES ({?vals});";
+				$attrs = "";
+				$vals = "";
+				foreach ($decoded as $attr => $val) {
+					if ($attr != 'table' && $attr != 'id') {
+						$attrs .= $attr.",";
+						$vals .= "'".$val."',";
+					}
+				}
+				$statement = str_replace('{?attrs}', substr($attrs, 0, strlen($attrs)-1), $statement);
+				$statement = str_replace('{?vals}', substr($vals, 0, strlen($vals)-1), $statement);
+				
+				if ($this->db->exec($statement)) {
+					return array('reason' => 'OK');
+				} else {
+					$state = 500;
+					return array("error" => mysql_error());
+				}
+			}
+		}
+	}
+	
         //---------Administration functions------------------
         
         //to control if adminisrator: if($_SESSION['privi_lvl']==2){
