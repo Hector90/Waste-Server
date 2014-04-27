@@ -149,23 +149,28 @@ class WasteHandler {
 		} else {
 			$entity = file_get_contents('php://input');
 			$decoded = json_decode($entity, true);
-			foreach ($decoded as &$row) {
-				$cat = $this->db->query("SELECT id FROM Category WHERE type = '%s'", array($row['category']));
-				if (count($cat) == 0) {
-					$row['state'] = 405;
-					$row['error'] = "Unknown category";
-				} else {
-					$prod = $this->db->query("SELECT Product.id, Product.name, Product.potential, Category.type, Category.id as cat FROM Product LEFT JOIN Category ON Category.id = Product.category WHERE bar_code = '%s'", array($row['bar_code']));
-					if (count($prod) == 0) {
-						$this->db->exec("INSERT INTO Product (bar_code, category, potential) VALUES ('%s', (SELECT id FROM Category WHERE type = 'Unknown'), 1)", array($row['bar_code']));
-						array_push($prod, array("id" => $this->db->lastId()));
-					}
-					if ($this->db->exec("INSERT INTO Waste (client, product, category, time_disposed) VALUES ('%s', '%s', '%s', '%s');", array($this->client, $prod[0]['id'], $cat[0]['id'], $row['timestamp']))) {
-						$this->learn($prod[0]['id']);
-						$row['state'] = 200;
+			if ($decoded == NULL) {
+				$state = 500;
+				return array("error" => "Cannot parse JSON payload");
+			} else {
+				foreach ($decoded as &$row) {
+					$cat = $this->db->query("SELECT id FROM Category WHERE type = '%s'", array($row['category']));
+					if (count($cat) == 0) {
+						$row['state'] = 405;
+						$row['error'] = "Unknown category";
 					} else {
-						$row['state'] = 500;
-						$row['error'] = mysql_error();
+						$prod = $this->db->query("SELECT Product.id, Product.name, Product.potential, Category.type, Category.id as cat FROM Product LEFT JOIN Category ON Category.id = Product.category WHERE bar_code = '%s'", array($row['bar_code']));
+						if (count($prod) == 0) {
+							$this->db->exec("INSERT INTO Product (bar_code, category, potential) VALUES ('%s', (SELECT id FROM Category WHERE type = 'Unknown'), 1)", array($row['bar_code']));
+							array_push($prod, array("id" => $this->db->lastId()));
+						}
+						if ($this->db->exec("INSERT INTO Waste (client, product, category, time_disposed) VALUES ('%s', '%s', '%s', '%s');", array($this->client, $prod[0]['id'], $cat[0]['id'], $row['timestamp']))) {
+							$this->learn($prod[0]['id']);
+							$row['state'] = 200;
+						} else {
+							$row['state'] = 500;
+							$row['error'] = mysql_error();
+						}
 					}
 				}
 			}
