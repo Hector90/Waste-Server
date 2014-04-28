@@ -114,7 +114,7 @@
 		GROUP BY Category.type;
 	</Query>
 
-	<Query name="qClientLogs" title="Client Log">
+	<Query name="qClientLogsCM" title="Log - Current Month">
 		SELECT 
 			ClientLog.method, 
 			ClientLog.cli_call, 
@@ -124,6 +124,20 @@
 			Clients.email
 		FROM ClientLog 
 			LEFT JOIN Clients ON Clients.id = ClientLog.client 
+		WHERE time_executed BETWEEN '{?CurrentMonthFD}' AND '{?CurrentMonthLD}'
+	</Query>
+
+	<Query name="qClientLogsCW" title="Log - Current Week">
+		SELECT 
+			ClientLog.method, 
+			ClientLog.cli_call, 
+			ClientLog.server_state, 
+			ClientLog.server_time,
+			ClientLog.time_executed,
+			Clients.email
+		FROM ClientLog 
+			LEFT JOIN Clients ON Clients.id = ClientLog.client 
+		WHERE time_executed BETWEEN '{?CurrentWeekFD}' AND '{?CurrentWeekLD}'
 	</Query>
 	
 </Queries>
