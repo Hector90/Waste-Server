@@ -41,33 +41,6 @@ class WasteHandler {
 	# }
 	
 	public function authenticate(&$response, &$api) {
-            
-		if (!Commons::getParam('serial', $api, 2) && !Commons::getParam('email', null, null) && !Commons::getParam('pin', null, null) && !Commons::getParam('sid', null, null)&& !Commons::getParam('newuser_email', null, null)&& !Commons::getParam('serial2', null, null)) {
-			$response = array("error" => "Authentication data missing.");
-			return false;
-		} 
-		$data = array();
-		if (Commons::getParam('serial', $api, 2) && !Commons::getParam('email', null, null) && !Commons::getParam('pin', null, null)) {
-			$data = $this->db->query("SELECT * FROM Clients WHERE serial_number = '%s';", array(Commons::getParam('serial', $api, 2)));
-			$this->session = "READ_ONLY";
-		}
-		if (Commons::getParam('email', null, null) && Commons::getParam('pin', null, null)) {
-			$data = $this->db->query("SELECT * FROM Clients WHERE email = '%s' AND pin = SHA1('%s');", array(Commons::getParam('email', null, null), Commons::getParam('pin', null, null)));
-			if (count($data) == 0) {
-				$response = array("error" => "Invalid pin or email.");
-				return false;
-			}
-			$this->session = "PROACTIVE";
-			session_start();
-			$api->sid = session_id();
-			$_SESSION['user.name'] = $data[0]['email'];
-			$_SESSION['user.id'] = $data[0]['id']; 
-                        $_SESSION['privi.lvl'] =$data[0]['privi_lvl']; //User levels: 0 normal user, 1 Company, 2 administrator
-                        $_SESSION['valid'] = true;
-		}
-                
-                
-                
 		if (Commons::getParam('sid', null, null)) {
 			session_id(Commons::getParam('sid', null, null));
 			session_start();
@@ -79,23 +52,41 @@ class WasteHandler {
 				$api->sid = session_id();
 				$this->client = $_SESSION['user.id'];
 			}
+		} else {
+			if (!Commons::getParam('serial', $api, 2) && !Commons::getParam('email', null, null) && !Commons::getParam('pin', null, null) && !Commons::getParam('sid', null, null)) {
+				$response = array("error" => "Authentication data missing.");
+				return false;
+			} 
+			$data = array();
+			if (Commons::getParam('serial', $api, 2) && !Commons::getParam('email', null, null) && !Commons::getParam('pin', null, null)) {
+				$data = $this->db->query("SELECT * FROM Clients WHERE serial_number = '%s';", array(Commons::getParam('serial', $api, 2)));
+				$this->session = "READ_ONLY";
+			}
+			if (Commons::getParam('email', null, null) && Commons::getParam('pin', null, null)) {
+				$data = $this->db->query("SELECT * FROM Clients WHERE email = '%s' AND pin = SHA1('%s');", array(Commons::getParam('email', null, null), Commons::getParam('pin', null, null)));
+				if (count($data) == 0) {
+					$response = array("error" => "Invalid pin or email.");
+					return false;
+				}
+				$this->session = "PROACTIVE";
+				session_start();
+				$api->sid = session_id();
+				$_SESSION['user.name'] = $data[0]['email'];
+				$_SESSION['user.id'] = $data[0]['id']; 
+				$_SESSION['privi.lvl'] =$data[0]['privi_lvl']; //User levels: 0 normal user, 1 Company, 2 administrator
+				$_SESSION['valid'] = true;
+			}
+			
+			if (count($data) == 0 && Commons::getParam('serial', $api, 2) != null) {
+				$this->db->exec("INSERT INTO Clients (serial_number, email, location) VALUES ('%s', 'n/a', 'n/a');", array(Commons::getParam('serial', $api, 2)));
+				$this->db->exec("INSERT INTO ClientRel (parent, child, type) VALUES ((SELECT id FROM Clients WHERE email = 'admin@waste'), '%s', 'ALL');", array($this->db->lastId()));
+				$data = $this->db->query("SELECT * FROM Clients WHERE serial_number = '%s';", array(Commons::getParam('serial', $api, 2)));
+			}
+					
+			if(isset($data[0]['id'])){
+				$this->client = $data[0]['id'];
+			}
 		}
-		/*
-		* 
-		* I think this was a kind of registration not needed anymore or it is? 
-		* -> We still need this, idea was that client (raspberry) can register independently to the system and user may claim device by entering correct S/N.
-		*
-		*/
-		if (count($data) == 0 && Commons::getParam('serial', $api, 2) != null) {
-			$this->db->exec("INSERT INTO Clients (serial_number, email, location) VALUES ('%s', 'n/a', 'n/a');", array(Commons::getParam('serial', $api, 2)));
-			$this->db->exec("INSERT INTO ClientRel (parent, child, type) VALUES ((SELECT id FROM Clients WHERE email = 'admin@waste'), '%s', 'ALL');", array($this->db->lastId()));
-			$data = $this->db->query("SELECT * FROM Clients WHERE serial_number = '%s';", array(Commons::getParam('serial', $api, 2)));
-		}
-                
-                if(isset($data[0]['id'])){
-                    $this->client = $data[0]['id'];
-                }
-		
 		return true;
 	}
 	
@@ -210,60 +201,56 @@ class WasteHandler {
 			return array("reason" => "Invalid login.");
 		}
 	}
-        /*
-                 * Doing the registration in the way of the client and the user are the same and 
-                 * when you registre you also claim serial, will modify it if we decide to separate
-                 * users and clients
-                 */
-        public function register(&$state, $api) {
+	
+	/*
+	* Doing the registration in the way of the client and the user are the same and 
+	* when you registre you also claim serial, will modify it if we decide to separate
+	* users and clients
+	*/
+	public function register(&$state, $api) {
 		if ($api->method != 'GET') {
 			$state = 405;
 			return array("error" => "invocation of get method requires HTTP GET");
-		}else{
-                    if (Commons::getParam('newuser_email', null, null) && Commons::getParam('pin', null, null) ) {
-                            $result = $this->db->query("SELECT * FROM Clients WHERE email = '%s';", array(Commons::getParam('newuser_email', null, null),Commons::getParam('serial2', null, null)));
-                            if(Commons::valid_serial(Commons::getParam('serial2', null, null),$this)){
-                                if (count($result) == 0) {
-                                    $this->db->exec("INSERT INTO Clients (serial_number, email, pin ,location) VALUES('%s', '%s', SHA1('%s'), '%s')",array(Commons::getParam('serial2', null, null),Commons::getParam('newuser_email', null, null),Commons::getParam('pin', null, null),Commons::getParam('location', null, null)));
-                                    $this->db->exec("UPDATE Serials SET claimed=1 WHERE serial_number='%s'",array(Commons::getParam('serial2', null, null)));
-                                    $response = array("message" => "Register successful");
-                                    return $response;
-
-                                }else{
-                                    $response = array("error" => "This email is already on use.");
-                                    return $response;
-                                }
-                            }else{
-                                $response = array("error" => "This is not a valid serial");
-                                return $response;
-
-                            }
-
-                    }else{
-                          $response = array("error" => "insufficient data");
-                          return $response;
-                }
-                }
+		} else {
+			if (Commons::getParam('email', null, null) && Commons::getParam('pin', null, null)) {
+				$result = $this->db->query("SELECT * FROM Clients WHERE email = '%s';", array(Commons::getParam('email', null, null),Commons::getParam('serial', $api, 2)));
+				if(Commons::valid_serial(Commons::getParam('serial', $api, 2),$this)){
+					if (count($result) == 0) {
+						$this->db->exec("INSERT INTO Clients (serial_number, email, pin ,location) VALUES('%s', '%s', SHA1('%s'), '%s')",array(Commons::getParam('serial', $api, 2),Commons::getParam('email', null, null),Commons::getParam('pin', null, null),Commons::getParam('location', null, null)));
+						$this->db->exec("UPDATE Serials SET claimed=1 WHERE serial_number='%s'",array(Commons::getParam('serial', $api, 2)));
+						$response = array("message" => "Register successful");
+						return $response;
+					} else {
+						$response = array("error" => "This email is already on use.");
+						return $response;
+					}
+				} else {
+					$response = array("error" => "This is not a valid serial");
+					return $response;
+				}
+			} else {
+				$response = array("error" => "insufficient data");
+				return $response;
+			}
+		}
 	}
+
 	public function claim(&$state, $api){
-            $_SESSION['user.id']=1;//Same problems that add_serial funtion
-            
-            if ($api->method != 'GET') {
+		if ($api->method != 'GET') {
 			$state = 405;
 			return array("error" => "invocation of get method requires HTTP GET");
-		}else{
-            if(Commons::valid_serial(Commons::getParam('serial2', null, null),$this)){
-            	 $this->db->exec("UPDATE Serials SET claimed=1 WHERE serial_number='%s'",array(Commons::getParam('serial2', null, null)));
-                 $this->db->exec("UPDATE Clients SET serial_number='%s' WHERE id='%s'",array(Commons::getParam('serial2', null, null),$_SESSION['user.id']));
-                
-                return array("reason" => "OK");;                               
-            }else
-                {
-                $response = array("error" => "This is not a valid serial");
-                return $response;
-                }
-            }
-        }
+		} else {
+			if (Commons::valid_serial(Commons::getParam('serial', $api, 2),$this)) {
+				$this->db->exec("UPDATE Serials SET claimed=1 WHERE serial_number='%s'",array(Commons::getParam('serial', $api, 2)));
+				$this->db->exec("UPDATE Clients SET serial_number='%s' WHERE id='%s'",array(Commons::getParam('serial', $api, 2),$_SESSION['user.id']));
+				return array("reason" => "OK");;                               
+			} else {
+				$response = array("error" => "This is not a valid serial");
+				return $response;
+			}
+		}
+	}
+
 	public function query(&$state, $api) {
 		if ($api->method != 'GET') {
 			$state = 405;
@@ -319,6 +306,9 @@ class WasteHandler {
 		if ($api->method != 'POST') {
 			$state = 405;
 			return array("error" => "invocation of update method requires HTTP POST");
+		} else if ($_SESSION['privi.lvl'] == 0) {
+			$state = 403;
+			return array("error" => "Not enough privileges.");
 		} else {
 			$entity = file_get_contents('php://input');
 			$decoded = json_decode($entity, true);
@@ -351,6 +341,9 @@ class WasteHandler {
 		if ($api->method != 'POST') {
 			$state = 405;
 			return array("error" => "invocation of insert method requires HTTP POST");
+		} else if ($_SESSION['privi.lvl'] == 0) {
+			$state = 403;
+			return array("error" => "Not enough privileges.");
 		} else {
 			$entity = file_get_contents('php://input');
 			$decoded = json_decode($entity, true);
@@ -383,30 +376,27 @@ class WasteHandler {
 		}
 	}
 	
-        //---------Administration functions------------------
-        
-        //to control if adminisrator: if($_SESSION['privi_lvl']==2){
-        // 
-        
-        // Not working ¿$_SESSION[privi.lvl] not started even when loged in?
-        public function add_serials(&$state, $api){
-            $_SESSION['privi.lvl']=2;//just for making work until find the bug
-            if ($api->method != 'GET') {
+	//---------Administration functions------------------
+	//to control if adminisrator: if($_SESSION['privi_lvl']==2){
+	// 
+	public function add_serials(&$state, $api) {
+		if ($api->method != 'GET') {
 			$state = 405;
-			return array("error" => "invocation of get method requires HTTP GET");
-                        
-		}else if(isset($_SESSION['privi.lvl'])==2 && Commons::getParam('serial2', null, null && $_SESSION['privi_lvl']==2)){
-                    
-                     $serials=split(":",Commons::getParam('serial2', null, null));
-                     foreach($serials as $val){
-                     $this->db->exec("INSERT INTO Serials (serial_number, claimed) VALUES ('%s', '0');",(array($val)));   
-                     
-                     }
-                     return array("reason" => "Serial numbers added to the database");
-                }else{
-                    return array("error" => "Not enough privileges");
-                }
-        }
+			return array("error" => "invocation of add_serials method requires HTTP GET");
+		} else if (isset($_SESSION['privi.lvl']) && Commons::getParam('serials', null, null) != NULL && $_SESSION['privi.lvl'] == 2) {
+			$serials = split(",",Commons::getParam('serials', $api, 2));
+			foreach($serials as $val) {
+				$this->db->exec("INSERT INTO Serials (serial_number, claimed) VALUES ('%s', '0');",(array($val)));
+			}
+			return array("reason" => "Serial numbers added to the database");
+		} else {
+			return array("error" => "Not enough privileges");
+		}
+	}
+	
+	public function log($data) {
+		$this->db->exec("INSERT INTO ClientLog (method, cli_call, server_state, response, server_time, client) VALUES ('%s', '%s', '%s', '%s', '%s', '%s');",(array($data['method'], $data['call'], $data['state'], json_encode($data), $data['server_time'], $this->client)));
+	}
 }
 ?>
 

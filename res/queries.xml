@@ -113,5 +113,17 @@
 		WHERE time_disposed BETWEEN '{?CurrentYearFD}' AND '{?CurrentYearLD}'
 		GROUP BY Category.type;
 	</Query>
+
+	<Query name="qClientLogs" title="Client Log">
+		SELECT 
+			ClientLog.method, 
+			ClientLog.cli_call, 
+			ClientLog.server_state, 
+			ClientLog.server_time,
+			ClientLog.time_executed,
+			Clients.email
+		FROM ClientLog 
+			LEFT JOIN Clients ON Clients.id = ClientLog.client 
+	</Query>
 	
 </Queries>

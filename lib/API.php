@@ -27,6 +27,7 @@ class API {
 			'server_time' => round(($this->endTime-$this->startTime)*1000, 2)
 		);
 		if (property_exists($this, 'sid')) $response['sid'] = $this->sid;
+		$this->handler->log($response);
 		return Commons::getParam('callback', null, null) != null ? Commons::getParam('callback', null, null)."(".json_encode($response).")" : json_encode($response);
 	}
 	
@@ -41,7 +42,7 @@ class API {
 		header("Content-Type: application/json");
 		$response = NULL;
 		$state = 200;
-		if (!$this->handler->authenticate($response, $this)) {
+		if ($this->call != 'register' && !$this->handler->authenticate($response, $this)) {
 			$state = 401;
 		} else if (!method_exists($this->handler, $this->call)) {
 			$state = 405;
