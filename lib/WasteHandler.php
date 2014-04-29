@@ -41,8 +41,8 @@ class WasteHandler {
 	# }
 	
 	public function authenticate(&$response, &$api) {
-		if (Commons::getParam('sid', null, null)) {
-			session_id(Commons::getParam('sid', null, null));
+		if ($_GET['sid']) {
+			session_id($_GET['sid']);
 			session_start();
 			if (!$_SESSION['valid']) {
 				$response = array("error" => "Invalid session.");
@@ -53,7 +53,7 @@ class WasteHandler {
 				$this->client = $_SESSION['user.id'];
 			}
 		} else {
-			if (!Commons::getParam('serial', $api, 2) && !Commons::getParam('email', null, null) && !Commons::getParam('pin', null, null) && !Commons::getParam('sid', null, null)) {
+			if (!Commons::getParam('serial', $api, 2) && !Commons::getParam('email', null, null) && !Commons::getParam('pin', null, null) && !array_key_exists('sid', $_GET)) {
 				$response = array("error" => "Authentication data missing.");
 				return false;
 			} 
