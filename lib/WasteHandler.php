@@ -222,16 +222,16 @@ class WasteHandler {
 						$response = array("message" => "Register successful");
 						return $response;
 					} else {
-						$response = array("error" => "This email is already on use.");
-						return $response;
+						$state = 500;
+						return array("error" => "This email is already on use.");
 					}
 				} else {
-					$response = array("error" => "This is not a valid serial");
-					return $response;
+					$state = 500;
+					return array("error" => "This is not a valid serial");
 				}
 			} else {
-				$response = array("error" => "insufficient data");
-				return $response;
+				$state = 500;
+				return array("error" => "insufficient data");
 			}
 		}
 	}
@@ -396,7 +396,9 @@ class WasteHandler {
 	}
 	
 	public function log($data) {
-		$this->db->exec("INSERT INTO ClientLog (method, cli_call, server_state, response, server_time, client) VALUES ('%s', '%s', '%s', '%s', '%s', '%s');",(array($data['method'], $data['call'], $data['state'], json_encode($data), $data['server_time'], $this->client)));
+		if (isset($this->client)) {
+			$this->db->exec("INSERT INTO ClientLog (method, cli_call, server_state, response, server_time, client) VALUES ('%s', '%s', '%s', '%s', '%s', '%s');",(array($data['method'], $data['call'], $data['state'], json_encode($data), $data['server_time'], $this->client)));
+		}
 	}
 	
 	public function import(&$state, $api) {
