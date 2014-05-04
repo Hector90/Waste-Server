@@ -6,6 +6,7 @@
 
 require_once('Commons.php');
 require_once('Database.php');
+require_once('PHPExcel/Classes/PHPExcel/IOFactory.php');
 
 class WasteHandler {
         
@@ -396,6 +397,52 @@ class WasteHandler {
 	
 	public function log($data) {
 		$this->db->exec("INSERT INTO ClientLog (method, cli_call, server_state, response, server_time, client) VALUES ('%s', '%s', '%s', '%s', '%s', '%s');",(array($data['method'], $data['call'], $data['state'], json_encode($data), $data['server_time'], $this->client)));
+	}
+	
+	public function import(&$state, $api) {
+		// Sample source: http://stackoverflow.com/questions/21507898/reading-spreadsheet-using-phpexcel
+		$inputFile = $_FILES['import-file']['tmp_name'];
+		$extension = strtoupper(pathinfo($inputFile, PATHINFO_EXTENSION));
+		try {
+			$inputFileType = PHPExcel_IOFactory::identify($inputFile);
+			$objReader = PHPExcel_IOFactory::createReader($inputFileType);
+			$objPHPExcel = $objReader->load($inputFile);
+		} catch(Exception $e) {
+			$state = 500;
+			return array("error" => $e->getMessage());
+        }
+		
+        $sheet = $objPHPExcel->getSheet(0); 
+        $highestRow = $sheet->getHighestRow(); 
+        $highestColumn = $sheet->getHighestColumn();
+		
+		$array = array();
+		$statement = "INSERT INTO ".Commons::getParam('table', $api, 2)." ({?attrs}) VALUES ({?vals});";
+		
+        for ($row = 1; $row <= $highestRow; $row++) { 
+			$rowData = $sheet->rangeToArray('A' . $row . ':' . $highestColumn . $row, NULL, TRUE, FALSE);
+			if ($row == 1) {
+				$attrs = "";
+				for ($col = 0; $col <= count($rowData[0]); $col++) {
+					if (isset($rowData[0][$col])) {
+						$attrs .= $rowData[0][$col] . ",";
+					}
+				}
+				$statement = str_replace('{?attrs}', substr($attrs, 0, strlen($attrs)-1), $statement);
+			} else {
+				$vals = "";
+				for ($col = 0; $col <= count($rowData[0]); $col++) {
+					if (isset($rowData[0][$col])) {
+						$vals .= "'" . $rowData[0][$col] . "',";
+					}
+				}
+				if ($vals != "") {
+					array_push($array, $this->db->exec(str_replace('{?vals}', substr($vals, 0, strlen($vals)-1), $statement), null) ? "OK" : mysql_error());
+				}
+			}
+        }
+		
+		return $array;
 	}
 }
 ?>
