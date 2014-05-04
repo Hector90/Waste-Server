@@ -52,6 +52,7 @@ class WasteHandler {
 			} else {
 				$api->sid = session_id();
 				$this->client = $_SESSION['user.id'];
+				$this->session = "PROACTIVE";
 			}
 		} else {
 			if (!Commons::getParam('serial', $api, 2) && !Commons::getParam('email', null, null) && !Commons::getParam('pin', null, null) && !array_key_exists('sid', $_GET)) {
@@ -74,7 +75,7 @@ class WasteHandler {
 				$api->sid = session_id();
 				$_SESSION['user.name'] = $data[0]['email'];
 				$_SESSION['user.id'] = $data[0]['id']; 
-				$_SESSION['privi.lvl'] =$data[0]['privi_lvl']; //User levels: 0 normal user, 1 Company, 2 administrator
+				$_SESSION['privi.lvl'] = $data[0]['privi_lvl']; //User levels: 0 normal user, 1 Company, 2 administrator
 				$_SESSION['valid'] = true;
 			}
 			
@@ -259,6 +260,9 @@ class WasteHandler {
 		if ($api->method != 'GET') {
 			$state = 405;
 			return array("error" => "invocation of get method requires HTTP GET");
+		} else if ($this->session != "PROACTIVE") {
+			$state = 403;
+			return array("error" => "Invocation of query requires login.");
 		} else if (!file_exists('./res/queries.xml')) {
 			$state = 405;
 			return array("error" => "Cannot locate queries file!");
@@ -291,6 +295,9 @@ class WasteHandler {
 		if ($api->method != 'GET') {
 			$state = 405;
 			return array("error" => "invocation of get method requires HTTP GET");
+		} else if ($this->session != "PROACTIVE") {
+			$state = 403;
+			return array("error" => "Invocation of listQueries requires login.");
 		} else if (!file_exists('./res/queries.xml')) {
 			$state = 405;
 			return array("error" => "Cannot locate queries file!");
@@ -299,7 +306,9 @@ class WasteHandler {
 			$query = "";
 			$data = array();
 			foreach ($queries->Query as $q) {
-				array_push($data, array("title" => (string)$q->attributes()->title, "name" => (string)$q->attributes()->name));
+				if ((int)$q->attributes()->privi <= (int)$_SESSION['privi.lvl']) {
+					array_push($data, array("title" => (string)$q->attributes()->title, "name" => (string)$q->attributes()->name));
+				}
 			}
 			return $data;
 		}
