@@ -214,16 +214,19 @@ class WasteHandler {
 			return array("error" => "invocation of get method requires HTTP GET");
 		} else {
 			if (Commons::getParam('email', null, null) && Commons::getParam('pin', null, null)) {
-				$result = $this->db->query("SELECT * FROM Clients WHERE email = '%s';", array(Commons::getParam('email', null, null),Commons::getParam('serial', $api, 2)));
+				$result = $this->db->query("SELECT * FROM Clients WHERE email = '%s' OR serial_number = '%s';", array(Commons::getParam('email', null, null),Commons::getParam('serial', $api, 2)));
 				if(Commons::valid_serial(Commons::getParam('serial', $api, 2),$this)){
 					if (count($result) == 0) {
 						$this->db->exec("INSERT INTO Clients (serial_number, email, pin ,location) VALUES('%s', '%s', SHA1('%s'), '%s')",array(Commons::getParam('serial', $api, 2),Commons::getParam('email', null, null),Commons::getParam('pin', null, null),Commons::getParam('location', null, null)));
 						$this->db->exec("UPDATE Serials SET claimed=1 WHERE serial_number='%s'",array(Commons::getParam('serial', $api, 2)));
-						$response = array("message" => "Register successful");
-						return $response;
+						return array("message" => "Register successful");
+					} else if ( $result[0]['email'] == null || $result[0]['email'] == '' || $result[0]['email'] == 'n/a') {
+						$this->db->exec("UPDATE Clients SET email = '%s', pin = SHA1('%s'), location = '%s' WHERE id = '%s';",array(Commons::getParam('email', null, null),Commons::getParam('pin', null, null),Commons::getParam('location', null, null), $result[0]['id']));
+						$this->db->exec("UPDATE Serials SET claimed=1 WHERE serial_number='%s'",array(Commons::getParam('serial', $api, 2)));
+						return array("message" => "Register successful");
 					} else {
 						$state = 500;
-						return array("error" => "This email is already on use.");
+						return array("error" => "This email (".$result[0]['email'].") is already on use.");
 					}
 				} else {
 					$state = 500;
@@ -397,7 +400,7 @@ class WasteHandler {
 	
 	public function log($data) {
 		if (isset($this->client)) {
-			$this->db->exec("INSERT INTO ClientLog (method, cli_call, server_state, response, server_time, client) VALUES ('%s', '%s', '%s', '%s', '%s', '%s');",(array($data['method'], $data['call'], $data['state'], json_encode($data), $data['server_time'], $this->client)));
+			$this->db->exec("INSERT INTO ClientLog (method, cli_call, server_state, response, server_time, client) VALUES ('%s', '%s', '%s', '%s', '%s', '%s');",(array($data['method'], $data['call'], $data['state'], 'n/a', $data['server_time'], $this->client)));
 		}
 	}
 	
