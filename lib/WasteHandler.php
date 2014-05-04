@@ -41,7 +41,7 @@ class WasteHandler {
 	# }
 	
 	public function authenticate(&$response, &$api) {
-		if ($_GET['sid']) {
+		if (isset($_GET['sid'])) {
 			session_id($_GET['sid']);
 			session_start();
 			if (!$_SESSION['valid']) {
